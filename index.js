@@ -248,7 +248,28 @@ class Chessboard {
 
 
 
-
+    /*
+    =================
+    ===PRINT BOARD===
+    =================
+    */
+    //print current board position to console
+    printBoard() {
+        let boardString = ""
+        for(let rank=1;rank<=8;rank++) {
+            boardString+=`${rank} `
+            for(let file=1;file<=8;file++) {
+                if(this.getSquare(file,rank).hasPiece!=null) {
+                    boardString+=`${this.getSquare(file,rank).hasPiece.icon} `
+                } else {
+                    boardString+=". "
+                }
+            }
+            boardString+="\n"
+        }
+        boardString+="  a b c d e f g h"
+        console.log(boardString)
+    }
 }
 
 
