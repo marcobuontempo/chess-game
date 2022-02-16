@@ -183,6 +183,35 @@ class Chessboard {
         this.setBoardSquares(boardSquares)
     }
 
+
+
+
+
+    /*
+    =================
+    ===IMPORT  FEN===
+    =================
+    */
+    //set the chessboard squares to match the fen position
+    importFenPosition() {
+        const fenPosition = this.getFen().split(" ")[0].split("/").reverse()
+        const newBoard = []
+
+        for(let rank=1;rank<=8;rank++) {
+            for(let file=1;file<=8;file++) {
+                const fenPieceKey = fenPosition[rank-1][file-1]
+                if(isNaN(fenPieceKey)) { 
+                    const colour = fenPieceKey==fenPieceKey.toUpperCase() ? "white" : "black"
+                    const type = this.convertPieceFenKeyToName(fenPieceKey)
+                    const piece = this.createPiece(colour,type)
+                    this.setSquarePiece(file,rank,piece)
+                } else {
+                    file+=fenPieceKey
+                }
+            }
+        }
+    }
+
 }
 
 
