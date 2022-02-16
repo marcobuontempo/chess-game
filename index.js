@@ -212,6 +212,43 @@ class Chessboard {
         }
     }
 
+
+
+    /*
+    =================
+    ===CREATE  FEN===
+    =================
+    */
+    //create fen from current position
+    generateCurrentFenPosition() {
+        const fenArray = []
+        let rankNotation = ""
+
+        for(let boardRank=1; boardRank<=8; boardRank++) {
+            let emptySquareCount = 0;
+            for(let boardFile=1; boardFile<=8; boardFile++) {
+                const piece = this.getSquare(boardFile,boardRank).hasPiece
+                if(piece) {
+                    if(emptySquareCount>0) { rankNotation+=emptySquareCount; emptySquareCount = 0 }
+                    rankNotation+=piece.fenPieceKey
+                } else {
+                    emptySquareCount += 1
+                }
+            }
+            if(emptySquareCount>0) { rankNotation+=emptySquareCount }
+            fenArray.push(rankNotation)
+            rankNotation = ""
+        }
+
+        const newFenPosition = fenArray.reverse().join("/");
+        return newFenPosition
+    }
+
+
+
+
+
+
 }
 
 
