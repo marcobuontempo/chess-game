@@ -1,6 +1,6 @@
 class Chessboard {
     constructor(fen) {
-        this._fen = fen || "rnbbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        this._fen = fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         this._turn = "white",
         this._castleRights = ["K","Q","k","q"],
         this._enPassantSquare = [null,null],
@@ -90,7 +90,7 @@ class Chessboard {
     ==================
     */
    //get piece type from fen key input
-    convertPieceFenKeyToName(fenKey) {
+    convertFenPieceToName(fenKey) {
         switch(fenKey.toLowerCase()) {
             case "r": return "rook"
             case "n": return "knight"
@@ -195,19 +195,20 @@ class Chessboard {
     //set the chessboard squares to match the fen position
     importFenPosition() {
         const fenPosition = this.getFen().split(" ")[0].split("/").reverse()
-        const newBoard = []
 
         for(let rank=1;rank<=8;rank++) {
+            let fenPieceIndex = 0
             for(let file=1;file<=8;file++) {
-                const fenPieceKey = fenPosition[rank-1][file-1]
-                if(isNaN(fenPieceKey)) { 
-                    const colour = fenPieceKey==fenPieceKey.toUpperCase() ? "white" : "black"
-                    const type = this.convertPieceFenKeyToName(fenPieceKey)
+                const fenPiece = fenPosition[rank-1][fenPieceIndex]
+                if(fenPiece && isNaN(fenPiece)) { 
+                    const colour = fenPiece==fenPiece.toUpperCase() ? "white" : "black"
+                    const type = this.convertFenPieceToName(fenPiece)
                     const piece = this.createPiece(colour,type)
                     this.setSquarePiece(file,rank,piece)
                 } else {
-                    file+=fenPieceKey
+                    file+=Number(fenPiece)-1    //offset the file position to skip the blank tiles. -1 to account for the square currently being checked
                 }
+                fenPieceIndex+=1
             }
         }
     }
@@ -256,7 +257,7 @@ class Chessboard {
     //print current board position to console
     printBoard() {
         let boardString = ""
-        for(let rank=1;rank<=8;rank++) {
+        for(let rank=8;rank>=1;rank--) {
             boardString+=`${rank} `
             for(let file=1;file<=8;file++) {
                 if(this.getSquare(file,rank).hasPiece!=null) {
@@ -280,3 +281,6 @@ class Chessboard {
 
 // ==== T E S T ====
 test = new Chessboard()
+test.createEmptyChessboard()
+test.importFenPosition()
+test.printBoard()
