@@ -40,8 +40,8 @@ class Chessboard {
     getBoardSquares() {
         return this._boardSquares;
     }
-    getSquare(boardFile,boardRank) {
-        return this._boardSquares[boardFile-1][boardRank-1];
+    getSquare(file,rank) {
+        return this._boardSquares[file-1][rank-1];
     }
     getPieceIcons() {
         return this._pieceIcons;
@@ -76,8 +76,8 @@ class Chessboard {
     setBoardSquares(newBoardSquares) {
         this._boardSquares = newBoardSquares;
     }
-    setSquarePiece(boardFile,boardRank,newPiece) {
-        this._boardSquares[boardFile-1][boardRank-1].hasPiece = newPiece;
+    setSquarePiece(file,rank,newPiece) {
+        this._boardSquares[file-1][rank-1].hasPiece = newPiece;
     }
 
 
@@ -124,9 +124,9 @@ class Chessboard {
     =================
     */
     //generate square coordinate string
-    generateSquareCoordinate(boardFile, boardRank) {
+    generateSquareCoordinate(file, rank) {
         let fileLetter;
-        switch(boardFile) {
+        switch(file) {
             case(1): fileLetter="A"; break
             case(2): fileLetter="B"; break
             case(3): fileLetter="C"; break
@@ -136,24 +136,24 @@ class Chessboard {
             case(7): fileLetter="G"; break
             case(8): fileLetter="H"; break
         }
-        return fileLetter+boardRank
+        return fileLetter+rank
     }
     //generate square colour
-    generateSquareColour(boardFile,boardRank) {
-        if((boardFile%2==0 && boardRank%2!=0) || (boardFile%2!=0 && boardRank%2==0)) {
+    generateSquareColour(file,rank) {
+        if((file%2==0 && rank%2!=0) || (file%2!=0 && rank%2==0)) {
             return "white"
         } else {
             return "black"
         }
     }
     //create board square
-    createSquare(squareId, squareCoordinate, squareColour, boardFile, boardRank, hasPiece) {
+    createSquare(ID, coordinate, colour, file, rank, hasPiece) {
         return {
-            squareId,
-            squareCoordinate,
-            squareColour,
-            boardFile,
-            boardRank,
+            ID,
+            coordinate,
+            colour,
+            file,
+            rank,
             hasPiece
         }
     }
@@ -171,17 +171,17 @@ class Chessboard {
     createEmptyChessboard() {
         const boardSquares = []
         let squareId = 0
-        for(let boardFile=1; boardFile<=8; boardFile++) {
-            const file = []
-            for(let boardRank=1; boardRank<=8; boardRank++) {
-                const squareCoordinate = this.generateSquareCoordinate(boardFile,boardRank)
-                const squareColour = this.generateSquareColour(boardFile,boardRank)
+        for(let file=1; file<=8; file++) {
+            const fileArray = []
+            for(let rank=1; rank<=8; rank++) {
+                const squareCoordinate = this.generateSquareCoordinate(file,rank)
+                const squareColour = this.generateSquareColour(file,rank)
                 const hasPiece = null
-                const square = this.createSquare(squareId,squareCoordinate,squareColour,boardFile,boardRank,hasPiece)
-                file.push(square)
+                const square = this.createSquare(squareId,squareCoordinate,squareColour,file,rank,hasPiece)
+                fileArray.push(square)
                 squareId++
             }
-            boardSquares.push(file)
+            boardSquares.push(fileArray)
         }
         this.setBoardSquares(boardSquares)
     }
@@ -228,10 +228,10 @@ class Chessboard {
         const fenArray = []
         let rankNotation = ""
 
-        for(let boardRank=1; boardRank<=8; boardRank++) {
+        for(let rank=1; rank<=8; rank++) {
             let emptySquareCount = 0;
-            for(let boardFile=1; boardFile<=8; boardFile++) {
-                const piece = this.getSquare(boardFile,boardRank).hasPiece
+            for(let file=1; file<=8; file++) {
+                const piece = this.getSquare(file,rank).hasPiece
                 if(piece) {
                     if(emptySquareCount>0) { rankNotation+=emptySquareCount; emptySquareCount = 0 }
                     rankNotation+=piece.fenPieceKey
@@ -456,6 +456,32 @@ class Chessboard {
         }
         return moves
     }
+    generatePiecePseudoMoves(fileFrom,rankFrom) {
+        const pieceType = this.getSquare(fileFrom,rankFrom).hasPiece.type
+        let pseudoMoves = [];
+
+        switch(pieceType) {
+            case("rook"): pseudoMoves=this.generateRookMoves(fileFrom,rankFrom); break
+            case("bishop"): pseudoMoves=this.generateBishopMoves(fileFrom,rankFrom); break
+            case("queen"): pseudoMoves=this.generateQueenMoves(fileFrom,rankFrom); break
+            case("king"): pseudoMoves=this.generateKingMoves(fileFrom,rankFrom); break
+            case("knight"): pseudoMoves=this.generateKnightMoves(fileFrom,rankFrom); break
+            case("pawn"): pseudoMoves=this.generatePawnMoves(fileFrom,rankFrom); break
+        }
+
+        return pseudoMoves
+    }
+    generateAllAttackedSquares(attackingColour) {
+        let attackedSquares = []
+        this.getBoardSquares().forEach(file => {
+            file.forEach(square => {
+                if(square.hasPiece && square.hasPiece.colour==attackingColour) { 
+                    attackedSquares = attackedSquares.concat(this.generatePiecePseudoMoves(square.file,square.rank))
+                }
+            })
+        })
+        return attackedSquares
+    }
 }
 
 
@@ -472,6 +498,5 @@ test.printBoard()
 
 test.movePiece(1,1,5,5)
 test.printBoard()
-console.log(test.generateRookMoves(5,5))
-console.log(test.generateKnightMoves(2,1))
-console.log(test.generatePawnMoves(1,7))
+console.log(test.generatePiecePseudoMoves(5,5))
+console.log(test.generateAllAttackedSquares("white"))
