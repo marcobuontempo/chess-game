@@ -147,8 +147,9 @@ class Chessboard {
         }
     }
     //create board square
-    createSquare(squareCoordinate, squareColour, boardFile, boardRank, hasPiece) {
+    createSquare(squareId, squareCoordinate, squareColour, boardFile, boardRank, hasPiece) {
         return {
+            squareId,
             squareCoordinate,
             squareColour,
             boardFile,
@@ -168,15 +169,17 @@ class Chessboard {
     }
     //create empty chessboard
     createEmptyChessboard() {
-        const boardSquares = [];
+        const boardSquares = []
+        let squareId = 0
         for(let boardFile=1; boardFile<=8; boardFile++) {
-            const file = [];
+            const file = []
             for(let boardRank=1; boardRank<=8; boardRank++) {
                 const squareCoordinate = this.generateSquareCoordinate(boardFile,boardRank)
                 const squareColour = this.generateSquareColour(boardFile,boardRank)
                 const hasPiece = null
-                const square = this.createSquare(squareCoordinate,squareColour,boardFile,boardRank,hasPiece)
+                const square = this.createSquare(squareId,squareCoordinate,squareColour,boardFile,boardRank,hasPiece)
                 file.push(square)
+                squareId++
             }
             boardSquares.push(file)
         }
@@ -271,6 +274,188 @@ class Chessboard {
         boardString+="  a b c d e f g h"
         console.log(boardString)
     }
+
+
+
+    
+    /*
+    =================
+    ===MOVE PIECES===
+    =================
+    */
+    //move piece object from one square to another
+    movePiece(fileFrom,rankFrom,fileTo,rankTo) {
+        const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
+        this.setSquarePiece(fileFrom,rankFrom,null)
+        this.setSquarePiece(fileTo,rankTo,pieceFrom)
+    }
+    //check if file/rank is on the edge of the board when scanning a direction
+    isOnBoardEdge(direction,file,rank) {
+        let onEdge = false
+        switch(direction) {
+            case("A-H"): if(file==8) onEdge=true; break
+            case("H-A"): if(file==1) onEdge=true; break
+            case("1-8"): if(rank==8) onEdge=true; break
+            case("8-1"): if(rank==1) onEdge=true; break
+            case("A1-H8"): if(file==8 || rank==8) onEdge=true; break
+            case("A8-H1"): if(file==8 || rank==1) onEdge=true; break
+            case("H1-A8"): if(file==1 || rank==8) onEdge=true; break
+            case("H8-A1"): if(file==1 || rank==1) onEdge=true; break
+        }
+        return onEdge
+    }
+    //check whether pieces are of different colours
+    isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo) {
+        const tileFrom = this.getSquare(fileFrom,rankFrom)
+        const tileTo = this.getSquare(fileTo,rankTo)
+        if(tileFrom.hasPiece.colour != tileTo.hasPiece.colour) {
+            return true
+        } else {
+            return false
+        }
+    }
+    //generate the moves in a given direction   ---  directions: A-H, H-A, 1-8, 8-1, A1-H8, A8-H1, H1-A8, H8-A1
+    generateDirectionMoves(direction,fileFrom,rankFrom) { 
+        const moves = []
+
+        let count = 1
+        let fileDirection = 0
+        let rankDirection = 0
+        let hasPiece = false
+
+        switch(direction) {
+            case("A-H"): fileDirection=1; break
+            case("H-A"): fileDirection=-1; break
+            case("1-8"): rankDirection=1; break
+            case("8-1"): rankDirection=-1; break
+            case("A1-H8"): fileDirection=1; rankDirection=1; break
+            case("A8-H1"): fileDirection=1; rankDirection=-1; break
+            case("H1-A8"): fileDirection=-1; rankDirection=1; break
+            case("H8-A1"): fileDirection=-1; rankDirection=-1; break
+        }
+
+        if(!this.isOnBoardEdge(direction,fileFrom,rankFrom)) {
+            while(!hasPiece) {
+                const fileTo = fileFrom+(count*fileDirection)
+                const rankTo = rankFrom+(count*rankDirection)
+                const tileToCheck = this.getSquare(fileTo,rankTo)
+                if(tileToCheck.hasPiece!=null) {
+                    hasPiece = true
+                    if(this.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) {
+                        moves.push([fileTo,rankTo])
+                    }
+                } else {
+                    moves.push([fileTo,rankTo])
+                    count++
+                }
+                if(this.isOnBoardEdge(direction,fileTo,rankTo)) { break }
+            }
+        }
+        return moves
+    }
+
+    generateRookMoves(file,rank) {
+        const moves =  this.generateDirectionMoves("A-H",file,rank).concat(
+                        this.generateDirectionMoves("H-A",file,rank),
+                        this.generateDirectionMoves("1-8",file,rank),
+                        this.generateDirectionMoves("8-1",file,rank));
+        return moves
+    }
+    generateBishopMoves(file,rank) {
+        const moves = this.generateDirectionMoves("A1-H8",file,rank).concat(
+                        this.generateDirectionMoves("A8-H1",file,rank),
+                        this.generateDirectionMoves("H1-A8",file,rank),
+                        this.generateDirectionMoves("H8-A1",file,rank));
+        return moves
+    }
+    generateQueenMoves(file,rank) {
+        const moves = this.generateDirectionMoves("A-H",file,rank).concat(
+                      this.generateDirectionMoves("H-A",file,rank),
+                      this.generateDirectionMoves("1-8",file,rank),
+                      this.generateDirectionMoves("8-1",file,rank),
+                      this.generateDirectionMoves("A1-H8",file,rank),
+                      this.generateDirectionMoves("A8-H1",file,rank),
+                      this.generateDirectionMoves("H1-A8",file,rank),
+                      this.generateDirectionMoves("H8-A1",file,rank));
+        return moves
+    }
+    generateKnightMoves(file,rank) {
+        const moves = []
+
+        //possible directions that knight can jump
+        const fileOffset = [-2, -1,  1,  2, -2, -1,  1,  2]
+        const rankOffset = [-1, -2, -2, -1,  1,  2,  2,  1]
+
+        for(let i=0;i<8;i++) {
+            const fileTo = file+fileOffset[i];
+            const rankTo = rank+rankOffset[i];
+            if(fileTo>8 || fileTo<1 || rankTo>8 || rankTo<1) { continue } //skip iteration if out of board bounds
+
+            const squareTo = this.getSquare(fileTo,rankTo)
+
+            if(squareTo.hasPiece!=null) {
+                if(this.isPieceCapturable(file,rank,fileTo,rankTo)) { moves.push([fileTo,rankTo]) }
+            } else {
+                moves.push([fileTo,rankTo])
+            }
+        }
+        return moves
+    }
+    generatePawnMoves(fileFrom,rankFrom) {
+        const moves = []
+
+        const pieceColour = this.getSquare(fileFrom,rankFrom).hasPiece.colour
+        const colourDirection = pieceColour=="white" ? 1 : -1 //1 for white (up), -1 for black (down)
+        
+        const singlePush = rankFrom+colourDirection
+        const doublePush = rankFrom+(colourDirection*2)
+        const leftCapture = fileFrom-1
+        const rightCapture = fileFrom+1
+
+        if(singlePush>=1 && singlePush<=8) {
+            let tileTo = this.getSquare(fileFrom,singlePush)
+            //single pawn push
+            if(tileTo.hasPiece==null) { 
+                moves.push([fileFrom,singlePush])
+                //double pawn push
+                if((pieceColour=="white" && rankFrom==2) || (pieceColour=="black" && rankFrom==7)) {
+                    const tileTo = this.getSquare(fileFrom,doublePush)
+                    if(tileTo.hasPiece==null) { moves.push([fileFrom, doublePush]) }
+                }
+            }
+            //left capture
+            if(leftCapture>=1 && leftCapture<=8) {
+                tileTo = this.getSquare(leftCapture, singlePush)
+                if(tileTo.hasPiece!=null && this.isPieceCapturable(fileFrom,rankFrom,leftCapture,singlePush)) { moves.push([leftCapture, singlePush]) }
+            }
+            //right capture
+            if(rightCapture>=1 && rightCapture<=8) {
+                tileTo = this.getSquare(rightCapture, singlePush)
+                if(tileTo.hasPiece!=null && this.isPieceCapturable(fileFrom,rankFrom,rightCapture,singlePush)) { moves.push([rightCapture, singlePush]) }
+            }
+        }
+        return moves
+    }
+    generateKingMoves(fileFrom,rankFrom) {
+        const moves = []
+
+        //Regular Moves
+        const fileOffset = [-1, -1, -1,  0,  0,  1,  1,  1]
+        const rankOffset = [-1,  0,  1, -1,  1, -1,  0,  1]
+        for(let i=0; i<8; i++) {
+            const fileTo = fileFrom+fileOffset[i];
+            const rankTo = rankFrom+rankOffset[i];
+            if(fileTo>8 || fileTo<1 || rankTo>8 || rankTo<1) { continue } //skip iteration if out of board bounds
+            
+            const tileToCheck = this.getSquare(fileTo,rankTo)
+            if(tileToCheck.hasPiece==null) {
+                moves.push([fileTo,rankTo])
+            } else {
+                if(this.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) { moves.push([fileTo,rankTo]) }
+            }
+        }
+        return moves
+    }
 }
 
 
@@ -284,3 +469,9 @@ test = new Chessboard()
 test.createEmptyChessboard()
 test.importFenPosition()
 test.printBoard()
+
+test.movePiece(1,1,5,5)
+test.printBoard()
+console.log(test.generateRookMoves(5,5))
+console.log(test.generateKnightMoves(2,1))
+console.log(test.generatePawnMoves(1,7))
