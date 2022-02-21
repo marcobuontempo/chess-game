@@ -304,7 +304,7 @@ class Chessboard {
         }
         catch (error)
         {
-            console.log("Invalid FEN")
+            console.log("Invalid FEN \n\n", error)
         }
     }
 
@@ -430,11 +430,11 @@ class Chessboard {
         }
         return onEdge
     }
-    //check whether pieces are of different colours
+    //check whether piece can move from one square to another
     isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo) {
         const tileFrom = this.getSquare(fileFrom,rankFrom)
         const tileTo = this.getSquare(fileTo,rankTo)
-        if(tileFrom.hasPiece.colour != tileTo.hasPiece.colour) {
+        if(tileTo.hasPiece==null || tileFrom.hasPiece.colour != tileTo.hasPiece.colour) {
             return true
         } else {
             return false
@@ -480,21 +480,21 @@ class Chessboard {
         return moves
     }
 
-    generateRookMoves(file,rank) {
+    generatePseudoRookMoves(file,rank) {
         const moves =  this.generateDirectionMoves("A-H",file,rank).concat(
                         this.generateDirectionMoves("H-A",file,rank),
                         this.generateDirectionMoves("1-8",file,rank),
                         this.generateDirectionMoves("8-1",file,rank));
         return moves
     }
-    generateBishopMoves(file,rank) {
+    generatePseudoBishopMoves(file,rank) {
         const moves = this.generateDirectionMoves("A1-H8",file,rank).concat(
                         this.generateDirectionMoves("A8-H1",file,rank),
                         this.generateDirectionMoves("H1-A8",file,rank),
                         this.generateDirectionMoves("H8-A1",file,rank));
         return moves
     }
-    generateQueenMoves(file,rank) {
+    generatePseudoQueenMoves(file,rank) {
         const moves = this.generateDirectionMoves("A-H",file,rank).concat(
                       this.generateDirectionMoves("H-A",file,rank),
                       this.generateDirectionMoves("1-8",file,rank),
@@ -505,7 +505,7 @@ class Chessboard {
                       this.generateDirectionMoves("H8-A1",file,rank));
         return moves
     }
-    generateKnightMoves(file,rank) {
+    generatePseudoKnightMoves(file,rank) {
         const moves = []
 
         //possible directions that knight can jump
@@ -527,7 +527,7 @@ class Chessboard {
         }
         return moves
     }
-    generatePawnMoves(fileFrom,rankFrom) {
+    generatePseudoPawnMoves(fileFrom,rankFrom) {
         const moves = []
 
         const pieceColour = this.getSquare(fileFrom,rankFrom).hasPiece.colour
@@ -565,7 +565,7 @@ class Chessboard {
         }
         return moves
     }
-    generateKingMoves(fileFrom,rankFrom) {
+    generatePseudoKingMoves(fileFrom,rankFrom) {
         const moves = []
 
         //Regular Moves
@@ -583,8 +583,16 @@ class Chessboard {
                 if(this.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) { moves.push([fileTo,rankTo]) }
             }
         }
+
+        //Castle Moves
+                const kingCastle = this.calculateCastleMove(fileFrom,rankFrom,"king")
+                    if(kingCastle!=null) { moves.push(kingCastle) }
+                const queenCastle = this.calculateCastleMove(fileFrom,rankFrom,"queen")
+                    if(queenCastle!=null) { moves.push(queenCastle) }
+
         return moves
     }
+
 
 
 
@@ -605,10 +613,45 @@ class Chessboard {
         }
         return null
     }
-    //CASTLING
+    //castling
+    calculateCastleMove(file,rank,castleSide) {
+        const newFile = castleSide=="king" ? file+2 : file-2
+        if(this.checkCastleIsValid(file,rank,castleSide)) {
+            return [newFile,rank]
+        }
+        return null
+    }
+    checkCastleIsValid(file,rank,castleSide) {        
+        const castleRights = this.getCastleRights()
+        const kingColour = this.getSquare(file,rank).hasPiece.colour
 
+        if(this.getTurn()!=kingColour || this.getCurrentKingIsInCheck()==true) { return false } //prevent infinite loop of generating king moves // isKingInCheck(colour1) => generateAllMoves => isKingInCheck(colour2) ...
 
-
+        if(castleSide=="king" && ((kingColour=="white" && castleRights[0]=="K") || (kingColour=="black" && castleRights[2]=="k"))) {
+            if(this.isValidMove(file,rank,file+1,rank) && this.isValidMove(file,rank,file+2,rank)) {
+                return true
+            }
+        } else if (castleSide=="queen" && ((kingColour=="white" && castleRights[1]=="Q") || (kingColour=="black" && castleRights[3]=="q"))) {
+            if(this.isValidMove(file,rank,file-1,rank) && this.isValidMove(file,rank,file-2,rank) && this.getSquare(file-3,rank).hasPiece==null) {
+                return true
+            }
+        }
+        return false
+    }
+    moveCastleKingSide(file,rank) {
+        const newFile = file+2
+        const rookFile = file+3
+        const newRookFile = rookFile-2
+        this.movePiece(file,rank,newFile,rank)
+        this.movePiece(rookFile,rank,newRookFile,rank)
+    }
+    moveCastleQueenSide(file,rank) {
+        const newFile = file-2
+        const rookFile = file-4
+        const newRookFile = rookFile+3
+        this.movePiece(file,rank,newFile,rank)
+        this.movePiece(rookFile,rank,newRookFile,rank)
+    }
 
     /*
     ============================
@@ -668,9 +711,12 @@ class Chessboard {
 
         //move piece and check validate that king is not in check
         const colourFrom = boardCopy.getSquare(fileFrom,rankFrom).hasPiece.colour
-        boardCopy.movePiece(fileFrom,rankFrom,fileTo,rankTo)
-        const kingPosition = colourFrom=="white" ? boardCopy.getWhiteKingPosition() : boardCopy.getBlackKingPosition()
-        return !boardCopy.isKingInCheck(kingPosition[0],kingPosition[1],colourFrom)
+        if(boardCopy.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) {
+            boardCopy.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+            const kingPosition = colourFrom=="white" ? boardCopy.getWhiteKingPosition() : boardCopy.getBlackKingPosition()
+            return !boardCopy.isKingInCheck(kingPosition[0],kingPosition[1],colourFrom)
+        }
+        return false
     }
     //generate all possible moves for a piece, whether illegal or not
     generatePiecePseudoMoves(fileFrom,rankFrom) {
@@ -678,12 +724,12 @@ class Chessboard {
         let pseudoMoves = [];
 
         switch(pieceType) {
-            case("rook"): pseudoMoves=this.generateRookMoves(fileFrom,rankFrom); break
-            case("bishop"): pseudoMoves=this.generateBishopMoves(fileFrom,rankFrom); break
-            case("queen"): pseudoMoves=this.generateQueenMoves(fileFrom,rankFrom); break
-            case("king"): pseudoMoves=this.generateKingMoves(fileFrom,rankFrom); break
-            case("knight"): pseudoMoves=this.generateKnightMoves(fileFrom,rankFrom); break
-            case("pawn"): pseudoMoves=this.generatePawnMoves(fileFrom,rankFrom); break
+            case("rook"): pseudoMoves=this.generatePseudoRookMoves(fileFrom,rankFrom); break
+            case("bishop"): pseudoMoves=this.generatePseudoBishopMoves(fileFrom,rankFrom); break
+            case("queen"): pseudoMoves=this.generatePseudoQueenMoves(fileFrom,rankFrom); break
+            case("king"): pseudoMoves=this.generatePseudoKingMoves(fileFrom,rankFrom); break
+            case("knight"): pseudoMoves=this.generatePseudoKnightMoves(fileFrom,rankFrom); break
+            case("pawn"): pseudoMoves=this.generatePseudoPawnMoves(fileFrom,rankFrom); break
         }
 
         return pseudoMoves
@@ -725,7 +771,7 @@ class Chessboard {
 }
 
 
-
+// get 
 
 
 
@@ -905,7 +951,7 @@ class ChessGame {
 // test.importFen()
 // test.printBoard()
 
-game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/8/PPPPPPPP/RNBQKBNR w KQkq e6 0 1")
+game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/8/PPP1qPPP/RNBQK2R w KQkq e6 0 1")
 game.getChessboard().createEmptyChessboard()
 game.getChessboard().importFen()
 game.renderBoard()
