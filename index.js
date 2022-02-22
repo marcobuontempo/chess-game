@@ -449,7 +449,7 @@ class Chessboard {
     =================
     */
     //move piece object from one square to another
-    movePiece(fileFrom,rankFrom,fileTo,rankTo) {
+    movePiece(fileFrom,rankFrom,fileTo,rankTo,promoteTo) {
         const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
         this.setSquarePiece(fileTo,rankTo,pieceFrom)
         this.setSquarePiece(fileFrom,rankFrom,null)
@@ -459,7 +459,7 @@ class Chessboard {
             if(fileFrom==5 && fileTo==7) { 
                 this.moveRookCastleKingSide(fileFrom,rankFrom) 
             } else if(fileFrom==5 && fileTo==3) { 
-                this.moveRookCastleQueenSide(fileFrom,rankFrom) 
+                this.moveRookCastleQueenSide(fileFrom,rankFrom)
             }
 
             //update king position
@@ -470,8 +470,16 @@ class Chessboard {
             }
         } else if(pieceFrom.type=="pawn") {
             //en passant capture
-            const offset = pieceFrom.colour=="white" ? -1 : 1
-            this.setSquarePiece(fileTo,rankTo+offset,null)
+            const enPassantSquare = this.getEnPassantSquare()
+            const captureRank = pieceFrom.colour=="white" ? rankTo-1 : rankTo+1
+            if(fileTo==enPassantSquare[0] && rankTo==enPassantSquare[1]) {
+                this.setSquarePiece(fileTo,captureRank,null)
+            }
+
+            //pawn promotion
+            if(rankTo==1 || rankTo==8) {
+                this.promotePawn(fileTo,rankTo,promoteTo)
+            }
         }
     }
 
@@ -711,6 +719,14 @@ class Chessboard {
         }
         return null
     }
+    //pawn promotion
+    promotePawn(file,rank,promoteTo="queen") {
+        const colour = this.getSquare(file,rank).hasPiece.colour
+        const newPiece = this.createPiece(colour,promoteTo)
+
+        this.setSquarePiece(file,rank,newPiece)
+    }
+
     //castling
     calculateCastleMove(file,rank,castleSide) {
         const newFile = castleSide=="king" ? file+2 : file-2
@@ -750,6 +766,9 @@ class Chessboard {
         const newRookFile = rookFile+3
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
+
+
+
     updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
         //castling
         const newCastleRights = this.getCastleRights()
@@ -1168,9 +1187,6 @@ class ChessGame {
         this.renderBoard()
     }
 }
-
-
-
 
 
 
