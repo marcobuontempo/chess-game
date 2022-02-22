@@ -316,22 +316,31 @@ class Chessboard {
     ===FEN HELPERS===
     =================
     */
+    //toggle turn
+    toggleTurn() {
+        const newTurn = this.getTurn()=="white" ? "black" : "white"
+        this.setTurn(newTurn)
+    }
     //add 1 to half move counter
     addHalfMoveCount() {
-        this._halfMoveCount+=1;
+        const newHalfMoveCount = this.getHalfMoveCount()+1
+        this.setHalfMoveCount(newHalfMoveCount)
     }
     //reset half move counter
     resetHalfMoveCount() {
-        this._halfMoveCount=0;
+        this.setHalfMoveCount(0)
     }
     //add 1 to full move counter
     addFullMoveCount() {
-        this._fullMoveCount+=1;
+        const newFullMoveCount = this.getFullMoveCount()+1
+        this.setFullMoveCount(newFullMoveCount)
     }
     //reset full move counter
     resetFullMoveCount() {
-        this._fullMoveCount=0;
+        this.setFullMoveCount(0)
     }
+
+
 
 
 
@@ -341,7 +350,10 @@ class Chessboard {
     =================
     */
     //create fen from current position
-    generateCurrentFenPosition() {
+    generateCurrentFen() {
+        const newFen = Array(6)
+
+        //board position
         const fenArray = []
         let rankNotation = ""
 
@@ -360,9 +372,33 @@ class Chessboard {
             fenArray.push(rankNotation)
             rankNotation = ""
         }
-
         const newFenPosition = fenArray.reverse().join("/");
-        return newFenPosition
+        newFen[0] = newFenPosition
+    
+        
+        //current turn
+        const newTurn = this.getTurn()=="white" ? "w" : "b"
+        newFen[1] = newTurn
+    
+        //castle rights
+        const newCastleRights = this.getCastleRights().join("")
+        newFen[2] = newCastleRights
+
+        //en passant coordinate
+        const currentEnPassant = this.getEnPassantSquare()
+        let newEnPassantSquare = "-"
+        if(currentEnPassant[0]!=null && currentEnPassant[1]!=null) {
+            newEnPassantSquare = this.convertSquareToCoordinate(currentEnPassant[0],currentEnPassant[1]).toLowerCase()
+        }
+        newFen[3] = newEnPassantSquare
+
+        //halfmove counter
+        newFen[4] = this.getHalfMoveCount()
+
+        //fullmove counter
+        newFen[5] = this.getFullMoveCount()
+
+        return newFen.join(" ")
     }
 
 
@@ -414,6 +450,15 @@ class Chessboard {
                 this.setBlackKingPosition(fileTo,rankTo)
             }
         }
+    }
+
+    //make actual move of piece on board
+    makeMove(fileFrom,rankFrom,fileTo,rankTo) {
+        this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
+        this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+
+        const newFen = this.generateCurrentFen()
+        this.setFen(newFen)
     }
     //check if file/rank is on the edge of the board when scanning a direction
     isOnBoardEdge(direction,file,rank) {
@@ -642,16 +687,85 @@ class Chessboard {
         const newFile = file+2
         const rookFile = file+3
         const newRookFile = rookFile-2
-        this.movePiece(file,rank,newFile,rank)
-        this.movePiece(rookFile,rank,newRookFile,rank)
+        this.makeMove(file,rank,newFile,rank)
+        this.makeMove(rookFile,rank,newRookFile,rank)
     }
     moveCastleQueenSide(file,rank) {
         const newFile = file-2
         const rookFile = file-4
         const newRookFile = rookFile+3
-        this.movePiece(file,rank,newFile,rank)
-        this.movePiece(rookFile,rank,newRookFile,rank)
+        this.makeMove(file,rank,newFile,rank)
+        this.makeMove(rookFile,rank,newRookFile,rank)
     }
+    updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
+        //castling
+        const newCastleRights = this.getCastleRights()
+        const pieceType = this.getSquare(fileFrom,rankFrom).hasPiece.type
+        const pieceColour = this.getSquare(fileFrom,rankFrom).hasPiece.colour
+
+        if(pieceType=="king") {
+            if(pieceColour=="white") { 
+                newCastleRights[0] = null
+                newCastleRights[1] = null
+            } else if(pieceColour=="black") {
+                newCastleRights[2] = null
+                newCastleRights[3] = null
+            }
+        } else if(pieceType=="rook") {
+            if(fileFrom==8) {
+                if(pieceColour=="white") {
+                    newCastleRights[0] = null
+                } else if(pieceColour=="black") {
+                    newCastleRights[2] = null
+                }
+            } else if (fileFrom==1) {
+                if(pieceColour=="white") {
+                    newCastleRights[1] = null
+                } else if(pieceColour=="black") {
+                    newCastleRights[3] = null
+                }
+            }
+        }
+        this.setCastleRights(newCastleRights)
+
+
+        //en passant
+        let newEnPassantSquare = "-"
+        if(pieceType=="pawn") {
+            const offset = pieceColour=="white" ? 1 : -1
+            const doublePushRank = rankFrom+(2*offset)
+            if(doublePushRank==rankTo) {
+                const newEnPassantRank = rankFrom+offset
+                newEnPassantSquare = this.convertSquareToCoordinate(fileFrom,newEnPassantRank).toLowerCase()
+
+            }
+        }
+        this.setEnPassantSquare(newEnPassantSquare)
+
+
+        //half move count
+        const pieceTo = this.getSquare(fileTo,rankTo)
+        if(pieceTo!=null || pieceType=="pawn") {
+            this.resetHalfMoveCount()
+        } else {
+            this.addHalfMoveCount()
+        }
+
+
+        //full move count
+        if(this.getTurn()=="black") {
+            this.addFullMoveCount()
+        }
+
+
+        //current turn
+        this.toggleTurn()
+    }
+
+
+
+
+
 
     /*
     ============================
@@ -712,7 +826,7 @@ class Chessboard {
         //move piece and check validate that king is not in check
         const colourFrom = boardCopy.getSquare(fileFrom,rankFrom).hasPiece.colour
         if(boardCopy.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) {
-            boardCopy.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+            boardCopy.makeMove(fileFrom,rankFrom,fileTo,rankTo)
             const kingPosition = colourFrom=="white" ? boardCopy.getWhiteKingPosition() : boardCopy.getBlackKingPosition()
             return !boardCopy.isKingInCheck(kingPosition[0],kingPosition[1],colourFrom)
         }
@@ -771,18 +885,19 @@ class Chessboard {
 }
 
 
-// get 
+
 
 
 
 class ChessGame {
     constructor(fen) {
         this._chessboard = new Chessboard(fen),  //the game board to operate within
-        this._gameState = "in-progress",    //current game state : in-progress, checkmate: white wins, checkmate: black wins, draw: stalemate, draw: 3-fold repetition, draw: 50 move rule
-        this._selectedSquare = [],    //the currently selected piece's square
-        this._selectedPieceMoves = [], //the tiles that the current selected piece is attacking
+        this._gameState = "in-progress",   //current game state : in-progress, checkmate: white wins, checkmate: black wins, draw: stalemate, draw: 3-fold repetition, draw: 50 move rule
+        this._playerColour = "white", //the user's colour
+        this._selectedSquare = Array(2).fill(null),    //the currently selected piece's square
+        this._selectedPieceMoves = null, //the tiles that the current selected piece is attacking
         this.eventHandlers = {  //bind methods. otherwise, 'this' refers to the global variable (this.window). also gives reference so we can remove event listeners
-            clickTile: this.clickTile.bind(this)
+            clickTile: this.clickSquare.bind(this)
         }
     }
 
@@ -794,11 +909,8 @@ class ChessGame {
     getGameState() {
         return this._gameState;
     }
-    getCurrentTurn() {
-        return this._currentTurn;
-    }
-    getNextTurn() {
-        return this._currentTurn=="white" ? "black" : "white";
+    getPlayerColour() {
+        return this._playerColour;
     }
     getSelectedSquare() {
         return this._selectedSquare;
@@ -806,26 +918,19 @@ class ChessGame {
     getSelectedPieceMoves() {
         return this._selectedPieceMoves;
     }
-    getCurrentKingIsInCheck() {
-        return this._currentKingIsInCheck;
-    }
-
 
     //Setters
-    setCurrentTurn(newColour) {
-        this._currentTurn = newColour;
-    }
     setGameState(newGameState) {
         this._gameState = newGameState;
+    }
+    setPlayerColour(newPlayerColour) {
+        this._playerColour = newPlayerColour;
     }
     setSelectedSquare(newFile,newRank) {
         this._selectedSquare = [newFile,newRank];
     }
     setSelectedPieceMoves(newMoves) {
         this._selectedPieceMoves = newMoves;
-    }
-    setCurrentKingIsInCheck(isChecked) {
-        this._currentKingIsInCheck = isChecked;
     }
 
 
@@ -841,68 +946,80 @@ class ChessGame {
             boardSquare.removeEventListener("click", this.eventHandlers.clickTile)
         })
     }
-    clickTile(e) {
-        const newTileHtml = e.target.classList.contains("board-piece") ? e.target.parentNode : e.target; //to select tile that the piece is on
-        const newFile = Number(newTileHtml.dataset.boardFile)
-        const newRank = Number(newTileHtml.dataset.boardRank)
-        const newSelectedSquareObject = this.getChessboard().getSquare(newFile,newRank) 
-        const newSelectedValue = `${newFile}${newRank}`
-        const previousSelectedValue = this.getSelectedSquare().join("")
-        const previousSquareHtml = document.querySelector(`[data-board-file='${previousSelectedValue[0]}'][data-board-rank='${previousSelectedValue[1]}']`)
 
-        if(!previousSelectedValue && newSelectedSquareObject.hasPiece!=null && newSelectedSquareObject.hasPiece.colour==this.getCurrentTurn()) { 
-            //if no previous piece selected, select newly clicked piece
-            this.setSelectedSquare(newFile,newRank)
-            newTileHtml.classList.toggle("selected-square")
-            const validMoves = this.getChessboard().generatePieceValidMoves(newFile,newRank)
-            this.setSelectedPieceMoves(validMoves)
-            this.toggleValidMovesHighlight(validMoves)
-        } else if (previousSelectedValue==newSelectedValue) {
-            //if same piece is re-selected, disable the piece's selection
-            this.setSelectedSquare([])
-            newTileHtml.classList.toggle("selected-square")
-            const validMoves = this.getChessboard().generatePieceValidMoves(newFile,newRank)
-            this.setSelectedPieceMoves(validMoves)
-            this.toggleValidMovesHighlight(validMoves)
-        } else if (previousSelectedValue!=newSelectedValue && newSelectedSquareObject.hasPiece!=null && newSelectedSquareObject.hasPiece.colour==this.getCurrentTurn()) {    
-            //if new valid piece is selected, un-select previous and re-select new
-            this.setSelectedSquare(newFile,newRank)
-            previousSquareHtml.classList.toggle("selected-square")
-            newTileHtml.classList.toggle("selected-square")
+    clickSquare(e) {
+        const clickedFile = e.target.classList.contains("board-piece") ? Number(e.target.parentNode.dataset.boardFile) : Number(e.target.dataset.boardFile)      //to select clicked square file
+        const clickedRank = e.target.classList.contains("board-piece") ? Number(e.target.parentNode.dataset.boardRank) : Number(e.target.dataset.boardRank)      //and rank
+        const newPiece = this.getChessboard().getSquare(clickedFile,clickedRank).hasPiece
+        
+        const playerColour = this.getPlayerColour()
+        const previousFile = this.getSelectedSquare()[0]
+        const previousRank = this.getSelectedSquare()[1]
 
-            this.toggleValidMovesHighlight(this.getSelectedPieceMoves())
+        //if piece is valid to select
+        if(newPiece!=null && newPiece.colour==playerColour) {
+            this.setSelectedSquare(clickedFile,clickedRank) //update stored square selected
+            const validPieceMoves = this.getChessboard().generatePieceValidMoves(clickedFile,clickedRank)   //generate selected piece's valid moves
+            this.setSelectedPieceMoves(validPieceMoves) //update the stored valid piece moves
+            this.toggleBoardHighlights()    //toggle highlights
+        } else  {
 
-            const validMoves = this.getChessboard().generatePieceValidMoves(newFile,newRank)
-            this.setSelectedPieceMoves(validMoves)
-            this.toggleValidMovesHighlight(validMoves)
-        } else {
-            //otherwise, move piece
-            this.handleMovePiece(newFile,newRank)
+            this.handleMovePiece(previousFile,previousRank,clickedFile,clickedRank)
+
+            this.setSelectedSquare(null,null)
+            this.setSelectedPieceMoves(null)
+            this.toggleBoardHighlights()
+        }
+
+    }
+    handleMovePiece(fileFrom,rankFrom,fileTo,rankTo) {
+        let validMove = false
+
+        const validMoves = this.getSelectedPieceMoves()
+        if(validMoves!=null) {
+            validMoves.forEach(move => {
+                if(fileTo==move[0] && rankTo==move[1]) { validMove = true }
+            })
+        }
+
+        if(validMove) {
+            this.getChessboard().makeMove(fileFrom,rankFrom,fileTo,rankTo)
+            this.renderBoard()
+            // this.updateFenFromMove()
         }
     }
-    toggleValidMovesHighlight(pieceMoves) {
-        pieceMoves.forEach(validMove => {
-            const file = validMove[0]
-            const rank = validMove[1]
-            const validTileHtml = document.querySelector(`[data-board-file='${file}'][data-board-rank='${rank}']`)
-            validTileHtml.classList.toggle("highlighted-square")
-        })
-    }
-    handleMovePiece(boardFileTo,boardRankTo) { 
-        // const boardFileFrom = this.getSelectedTile()[0]
-        // const boardRankFrom = this.getSelectedTile()[1]
-        // this.getSelectedPieceMoves().forEach(validMove => {
-        //     const boardFileValid = validMove[0]
-        //     const boardRankValid = validMove[1]
-        //     if(boardFileTo==boardFileValid && boardRankTo==boardRankValid) {
-        //         const pieceFrom = this.getChessboard().getTile(boardFileFrom,boardRankFrom).hasPiece
-        //         const pieceTo = this.getChessboard().getTile(boardFileTo,boardRankTo).hasPiece
-        //         this.movePiece(boardFileFrom,boardRankFrom,boardFileTo,boardRankTo)
-        //         this.setupNextTurn(pieceFrom,pieceTo)
-        //         this.updateGameState(this.getCurrentTurn())
-        //         this.updateBoardDisplay()
-        //     }
-        // })
+    toggleBoardHighlights() {
+        //remove any existing move highlights
+        const previousMoveSquares = document.querySelectorAll(".highlighted-square")
+        if(previousMoveSquares.length>0) {
+            previousMoveSquares.forEach(highlightedSquare => {
+                highlightedSquare.classList.toggle("highlighted-square")
+            })
+        }
+
+        //highlight new moves
+        const newMoveSquares = this.getSelectedPieceMoves()
+        if(newMoveSquares!=null) {
+            newMoveSquares.forEach(validMove => {
+                const file = validMove[0]
+                const rank = validMove[1]
+                const validSquareHtml = document.querySelector(`[data-board-file='${file}'][data-board-rank='${rank}']`)
+                validSquareHtml.classList.toggle("highlighted-square")
+            })
+        }
+
+        //remove highlighted selected square
+        const previousSelectedSquare = document.querySelector(".selected-square")
+        if(previousSelectedSquare!=null) {
+            previousSelectedSquare.classList.toggle("selected-square")
+        }
+
+        //highlight selected piece
+        const newSelectedSquare = this.getSelectedSquare()
+        if(newSelectedSquare[0]!=null || newSelectedSquare[1]!=null) {
+            const newSquareHtml = document.querySelector(`[data-board-file='${newSelectedSquare[0]}'][data-board-rank='${newSelectedSquare[1]}']`)
+            newSquareHtml.classList.toggle("selected-square")
+        }
     }
 
 
@@ -922,7 +1039,7 @@ class ChessGame {
                 }
     
                 const squareHtml = 
-                `<div class="board-square" data-square-coordinate=${square.coordinate} data-square-colour=${square.colour} data-board-file=${square.file} data-board-rank=${square.rank}>
+                `<div class="board-square" data-square-position=[${square.file},${square.rank}] data-square-coordinate=${square.coordinate} data-square-colour=${square.colour} data-board-file=${square.file} data-board-rank=${square.rank}>
                     ${pieceHtml}
                     <p class="square-coordinate">
                         ${square.coordinate}
@@ -939,6 +1056,9 @@ class ChessGame {
         const boardHtml = this.createBoardHtml()
         const chessboardEl = document.querySelector("#chessboard")
         chessboardEl.innerHTML = boardHtml
+
+        game.removePieceEventListeners()
+        game.addPieceEventListeners()
     }
 }
 
@@ -951,8 +1071,7 @@ class ChessGame {
 // test.importFen()
 // test.printBoard()
 
-game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/8/PPP1qPPP/RNBQK2R w KQkq e6 0 1")
+game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
 game.getChessboard().createEmptyChessboard()
 game.getChessboard().importFen()
 game.renderBoard()
-game.addPieceEventListeners()
