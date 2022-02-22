@@ -89,6 +89,9 @@ html, body {
 .highlighted-square {
     background-color: green;
 }
+.checked-king {
+    background-color: blue;
+}
 
 
 /* END GAME */

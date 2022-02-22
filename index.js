@@ -297,10 +297,7 @@ class Chessboard {
             this.setFullMoveCount(Number(fenFullMove))
 
             //is current king in check
-            const currentColour = fenTurn=="w" ? "white" : "black"
-            const currentKingPosition = fenTurn=="w" ? this.getWhiteKingPosition() : this.getBlackKingPosition()
-            const isInCheck = this.isKingInCheck(currentKingPosition[0],currentKingPosition[1],currentColour)
-            this.setCurrentKingIsInCheck(isInCheck)
+            this.updateKingIsInCheck()
         }
         catch (error)
         {
@@ -308,6 +305,12 @@ class Chessboard {
         }
     }
 
+    updateKingIsInCheck() {
+        const currentColour = this.getTurn()
+        const currentKingPosition = currentColour=="white" ? this.getWhiteKingPosition() : this.getBlackKingPosition()
+        const isInCheck = this.isKingInCheck(currentKingPosition[0],currentKingPosition[1],currentColour)
+        this.setCurrentKingIsInCheck(isInCheck)
+    }
 
 
 
@@ -464,6 +467,8 @@ class Chessboard {
         } else {
             this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
         }
+
+        this.updateKingIsInCheck() //check whether king is in check and update state
 
         const newFen = this.generateCurrentFen()
         this.setFen(newFen)
@@ -1019,7 +1024,6 @@ class ChessGame {
                 highlightedSquare.classList.toggle("highlighted-square")
             })
         }
-
         //highlight new moves
         const newMoveSquares = this.getSelectedPieceMoves()
         if(newMoveSquares!=null) {
@@ -1036,12 +1040,23 @@ class ChessGame {
         if(previousSelectedSquare!=null) {
             previousSelectedSquare.classList.toggle("selected-square")
         }
-
         //highlight selected piece
         const newSelectedSquare = this.getSelectedSquare()
         if(newSelectedSquare[0]!=null || newSelectedSquare[1]!=null) {
             const newSquareHtml = document.querySelector(`[data-board-file='${newSelectedSquare[0]}'][data-board-rank='${newSelectedSquare[1]}']`)
             newSquareHtml.classList.toggle("selected-square")
+        }
+
+        //remove any checked king square
+        const kingCheckedHighlight = document.querySelector(".checked-king")
+        if(kingCheckedHighlight!=null) {
+            kingCheckedHighlight.classList.toggle("checked-king")
+        }
+        //highlight checked king
+        if(this.getChessboard().getCurrentKingIsInCheck()) {
+            const kingPosition = this.getChessboard().getTurn()=="white" ? this.getChessboard().getWhiteKingPosition() : this.getChessboard().getBlackKingPosition()
+            const kingHtml = document.querySelector(`[data-board-file='${kingPosition[0]}'][data-board-rank='${kingPosition[1]}']`)
+            kingHtml.classList.toggle("checked-king")
         }
     }
 
@@ -1087,6 +1102,7 @@ class ChessGame {
         const chessboardEl = document.querySelector("#chessboard")
         chessboardEl.innerHTML = boardHtml
 
+        this.toggleBoardHighlights()
         this.removePieceEventListeners()
         this.addPieceEventListeners()
     }
@@ -1113,5 +1129,5 @@ class ChessGame {
 //====== T E S T ======
 
 //PLAYER VS PLAYER
-    game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4Q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
+    game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
     game.startTwoPlayerGame()
