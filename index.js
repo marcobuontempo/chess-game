@@ -285,7 +285,7 @@ class Chessboard {
             const fenEnPassant = importedFen[3]
             if(fenEnPassant!="-") {
                 const newEnPassant = this.convertCoordinateToSquare(fenEnPassant)
-                this.setEnPassantSquare(newEnPassant)
+                this.setEnPassantSquare([newEnPassant[0],newEnPassant[1]])
             }
 
             //halfmove counter
@@ -738,14 +738,12 @@ class Chessboard {
 
 
         //en passant
-        let newEnPassantSquare = "-"
+        let newEnPassantSquare = [null,null]
         if(pieceType=="pawn") {
             const offset = pieceColour=="white" ? 1 : -1
             const doublePushRank = rankFrom+(2*offset)
             if(doublePushRank==rankTo) {
-                const newEnPassantRank = rankFrom+offset
-                newEnPassantSquare = this.convertSquareToCoordinate(fileFrom,newEnPassantRank).toLowerCase()
-
+                newEnPassantSquare = [fileFrom,rankFrom+offset]
             }
         }
         this.setEnPassantSquare(newEnPassantSquare)
@@ -1082,8 +1080,3 @@ game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4Q3/PPP2PPP/RNBQK2R w KQkq e6 0
 game.getChessboard().createEmptyChessboard()
 game.getChessboard().importFen()
 game.renderBoard()
-
-
-
-
-    //MAKE CASTLE MOVE
