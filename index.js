@@ -485,7 +485,8 @@ class Chessboard {
         this.setFen(newFen)
 
         //check game end
-        console.log(this.checkEndGame())
+        const endGame = this.checkEndGame()
+        this.setGameState(endGame)
     }
     //END GAME
     checkEndGame() {
@@ -504,6 +505,7 @@ class Chessboard {
         } else if(halfMoveCount>=50) {
             return "Draw: 50 Move Rule"
         }
+        return "in-progress"
     }
 
 
@@ -789,7 +791,7 @@ class Chessboard {
 
 
         //half move count
-        const pieceTo = this.getSquare(fileTo,rankTo)
+        const pieceTo = this.getSquare(fileTo,rankTo).hasPiece
         if(pieceTo!=null || pieceType=="pawn") {
             this.resetHalfMoveCount()
         } else {
@@ -1141,7 +1143,9 @@ class ChessGame {
 
         this.toggleBoardHighlights()
         this.removePieceEventListeners()
-        this.addPieceEventListeners()
+
+        const gameState = this.getChessboard().getGameState()
+        if(gameState=="in-progress") { this.addPieceEventListeners() }
     }
 
 
