@@ -1,5 +1,6 @@
 class Chessboard {
     constructor(fen) {
+        this._gameState = "in-progress",   //current game state : in-progress, checkmate: white wins, checkmate: black wins, draw: stalemate, draw: 3-fold repetition, draw: 50 move rule
         this._fen = fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         this._turn = "",
         this._castleRights = Array(4).fill(null),
@@ -22,6 +23,9 @@ class Chessboard {
     =====GETTERS=====
     =================
     */
+    getGameState() {
+        return this._gameState;
+    }
     getFen() {
         return this._fen;
     }
@@ -67,6 +71,9 @@ class Chessboard {
     =====SETTERS=====
     =================
     */
+    setGameState(newGameState) {
+        this._gameState = newGameState;
+    }
     setFen(newFen) {
         this._fen = newFen;
     }
@@ -384,7 +391,8 @@ class Chessboard {
         newFen[1] = newTurn
     
         //castle rights
-        const newCastleRights = this.getCastleRights().join("")
+        let newCastleRights = this.getCastleRights().join("")
+        if(newCastleRights=="") { newCastleRights="-" }
         newFen[2] = newCastleRights
 
         //en passant coordinate
@@ -445,18 +453,14 @@ class Chessboard {
         const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
         this.setSquarePiece(fileTo,rankTo,pieceFrom)
         this.setSquarePiece(fileFrom,rankFrom,null)
-    }
 
-    //make actual move of piece on board
-    makeMove(fileFrom,rankFrom,fileTo,rankTo) {
-        this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
-        
-        const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
         if(pieceFrom.type=="king") {
             //castling
-            if(fileFrom==5 && fileTo==7) { this.moveCastleKingSide(fileFrom,rankFrom) }
-            else if(fileFrom==5 && fileTo==3) { this.moveCastleQueenSide(fileFrom,rankFrom) }
-            else { this.movePiece(fileFrom,rankFrom,fileTo,rankTo) }
+            if(fileFrom==5 && fileTo==7) { 
+                this.moveRookCastleKingSide(fileFrom,rankFrom) 
+            } else if(fileFrom==5 && fileTo==3) { 
+                this.moveRookCastleQueenSide(fileFrom,rankFrom) 
+            }
 
             //update king position
             if(pieceFrom.colour=="white") {
@@ -464,15 +468,45 @@ class Chessboard {
             } else if (pieceFrom.colour=="black") {
                 this.setBlackKingPosition(fileTo,rankTo)
             }
-        } else {
-            this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
         }
+    }
 
-        this.updateKingIsInCheck() //check whether king is in check and update state
+    //make actual move of piece on board
+    makeMove(fileFrom,rankFrom,fileTo,rankTo) {
+        this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
+        
+        this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
 
+        //check whether king is in check and update state
+        this.updateKingIsInCheck() 
+
+        //update fen
         const newFen = this.generateCurrentFen()
         this.setFen(newFen)
+
+        //check game end
+        console.log(this.checkEndGame())
     }
+    //END GAME
+    checkEndGame() {
+        const currentTurn = this.getTurn()
+        const opponentTurn = currentTurn=="white" ? "Black" : "White"
+        const validMoves = this.generateAllValidMoves(currentTurn)
+        const kingIsInCheck = this.getCurrentKingIsInCheck()
+        const halfMoveCount = this.getHalfMoveCount()
+
+        if(validMoves.length==0) {
+            if(kingIsInCheck) {
+                return `Checkmate: ${opponentTurn} wins!`
+            } else if(!kingIsInCheck) {
+                return "Draw: Stalemate"
+            }
+        } else if(halfMoveCount>=50) {
+            return "Draw: 50 Move Rule"
+        }
+    }
+
+
     //check if file/rank is on the edge of the board when scanning a direction
     isOnBoardEdge(direction,file,rank) {
         let onEdge = false
@@ -681,6 +715,8 @@ class Chessboard {
     }
     checkCastleIsValid(file,rank,castleSide) {        
         const castleRights = this.getCastleRights()
+        if(castleRights=="-") { return false }
+
         const kingColour = this.getSquare(file,rank).hasPiece.colour
 
         if(this.getTurn()!=kingColour || this.getCurrentKingIsInCheck()==true) { return false } //prevent infinite loop of generating king moves // isKingInCheck(colour1) => generateAllMoves => isKingInCheck(colour2) ...
@@ -696,18 +732,16 @@ class Chessboard {
         }
         return false
     }
-    moveCastleKingSide(file,rank) {
+    moveRookCastleKingSide(file,rank) {
         const newFile = file+2
         const rookFile = file+3
         const newRookFile = rookFile-2
-        this.movePiece(file,rank,newFile,rank)
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
-    moveCastleQueenSide(file,rank) {
+    moveRookCastleQueenSide(file,rank) {
         const newFile = file-2
         const rookFile = file-4
         const newRookFile = rookFile+3
-        this.movePiece(file,rank,newFile,rank)
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
     updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
@@ -837,7 +871,8 @@ class Chessboard {
         //move piece and check validate that king is not in check
         const colourFrom = boardCopy.getSquare(fileFrom,rankFrom).hasPiece.colour
         if(boardCopy.isPieceCapturable(fileFrom,rankFrom,fileTo,rankTo)) {
-            boardCopy.makeMove(fileFrom,rankFrom,fileTo,rankTo)
+            boardCopy.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+            boardCopy.updateKingIsInCheck()
             const kingPosition = colourFrom=="white" ? boardCopy.getWhiteKingPosition() : boardCopy.getBlackKingPosition()
             return !boardCopy.isKingInCheck(kingPosition[0],kingPosition[1],colourFrom)
         }
@@ -886,7 +921,7 @@ class Chessboard {
         let attackedSquares = []
         this.getBoardSquares().forEach(file => {
             file.forEach(square => {
-                if(square.hasPiece && square.hasPiece.colour==attackingColour) { 
+                if(square.hasPiece && square.hasPiece.colour==attackingColour) {
                     attackedSquares = attackedSquares.concat(this.generatePieceValidMoves(square.file,square.rank))
                 }
             })
@@ -914,7 +949,6 @@ class ChessGame {
     constructor(fen, gameMode) {
         this._chessboard = new Chessboard(fen),  //the game board to operate within
         this._gameMode = gameMode || "pvp", //player-vs-player (pvp) OR player-vs-bot (pvb)
-        this._gameState = "in-progress",   //current game state : in-progress, checkmate: white wins, checkmate: black wins, draw: stalemate, draw: 3-fold repetition, draw: 50 move rule
         this._playerColour = "white", //the user's colour
         this._selectedSquare = Array(2).fill(null),    //the currently selected piece's square
         this._selectedPieceMoves = null, //the tiles that the current selected piece is attacking
@@ -931,9 +965,7 @@ class ChessGame {
     getGameMode() {
         return this._gameMode;
     }
-    getGameState() {
-        return this._gameState;
-    }
+
     getPlayerColour() {
         return this._playerColour;
     }
@@ -947,9 +979,6 @@ class ChessGame {
     //Setters
     setGameMode(newGameMode) {
         this._gameMode = newGameMode;
-    }
-    setGameState(newGameState) {
-        this._gameState = newGameState;
     }
     setPlayerColour(newPlayerColour) {
         this._playerColour = newPlayerColour;
@@ -976,13 +1005,17 @@ class ChessGame {
     }
 
     clickSquare(e) {
+        const currentTurn = this.getChessboard().getTurn()
+        const playerColour = this.getPlayerColour()
+        if(currentTurn!=playerColour) { return } //only allow piece interaction if current player turn
+
         const clickedFile = e.target.classList.contains("board-piece") ? Number(e.target.parentNode.dataset.boardFile) : Number(e.target.dataset.boardFile)      //to select clicked square file
         const clickedRank = e.target.classList.contains("board-piece") ? Number(e.target.parentNode.dataset.boardRank) : Number(e.target.dataset.boardRank)      //and rank
         const newPiece = this.getChessboard().getSquare(clickedFile,clickedRank).hasPiece
         
-        const playerColour = this.getPlayerColour()
         const previousFile = this.getSelectedSquare()[0]
         const previousRank = this.getSelectedSquare()[1]
+
 
         //if piece is valid to select
         if(newPiece!=null && newPiece.colour==playerColour) {
@@ -1061,10 +1094,14 @@ class ChessGame {
     }
 
 
-
+    //toggle current player for player-player game mode
     updateCurrentPlayer() {
-        const currentTurn = this.getChessboard().getTurn()
-        this.setPlayerColour(currentTurn)
+        const gameMode = this.getGameMode()
+
+        if(gameMode=="pvp") {
+            const currentTurn = this.getChessboard().getTurn()
+            this.setPlayerColour(currentTurn) 
+        }
     }
 
 
@@ -1111,14 +1148,10 @@ class ChessGame {
 
 
     //CREATE GAME
-    //player vs player
-    startTwoPlayerGame() {
+    startGame() {
         this.getChessboard().initialiseBoard()
         this.renderBoard()
     }
-    
-
-    //player vs bot
 }
 
 
@@ -1129,5 +1162,5 @@ class ChessGame {
 //====== T E S T ======
 
 //PLAYER VS PLAYER
-    game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
-    game.startTwoPlayerGame()
+    game = new ChessGame()
+    game.startGame()
