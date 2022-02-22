@@ -417,7 +417,7 @@ class Chessboard {
             boardString+=`${rank} `
             for(let file=1;file<=8;file++) {
                 if(this.getSquare(file,rank).hasPiece!=null) {
-                    boardString+=`${this.getSquare(file,rank).hasPiece.icon} `
+                    boardString+=`${this.getSquare(file,rank).hasPiece.fenPieceKey} `
                 } else {
                     boardString+=". "
                 }
@@ -425,7 +425,7 @@ class Chessboard {
             boardString+="\n"
         }
         boardString+="  a b c d e f g h"
-        console.log(boardString)
+        console.log(`%c${boardString}`, "color:green; font-size:20px; font-family:monospace")
     }
 
 
@@ -442,20 +442,28 @@ class Chessboard {
         const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
         this.setSquarePiece(fileTo,rankTo,pieceFrom)
         this.setSquarePiece(fileFrom,rankFrom,null)
-
-        if(pieceFrom.type=="king") {
-            if(pieceFrom.colour=="white") {
-                this.setWhiteKingPosition(fileTo,rankTo)
-            } else if (pieceFrom.colour=="black") {
-                this.setBlackKingPosition(fileTo,rankTo)
-            }
-        }
     }
 
     //make actual move of piece on board
     makeMove(fileFrom,rankFrom,fileTo,rankTo) {
         this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
-        this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+        
+        const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
+        if(pieceFrom.type=="king") {
+            //castling
+            if(fileFrom==5 && fileTo==7) { this.moveCastleKingSide(fileFrom,rankFrom) }
+            else if(fileFrom==5 && fileTo==3) { this.moveCastleQueenSide(fileFrom,rankFrom) }
+            else { this.movePiece(fileFrom,rankFrom,fileTo,rankTo) }
+
+            //update king position
+            if(pieceFrom.colour=="white") {
+                this.setWhiteKingPosition(fileTo,rankTo)
+            } else if (pieceFrom.colour=="black") {
+                this.setBlackKingPosition(fileTo,rankTo)
+            }
+        } else {
+            this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+        }
 
         const newFen = this.generateCurrentFen()
         this.setFen(newFen)
@@ -687,15 +695,15 @@ class Chessboard {
         const newFile = file+2
         const rookFile = file+3
         const newRookFile = rookFile-2
-        this.makeMove(file,rank,newFile,rank)
-        this.makeMove(rookFile,rank,newRookFile,rank)
+        this.movePiece(file,rank,newFile,rank)
+        this.movePiece(rookFile,rank,newRookFile,rank)
     }
     moveCastleQueenSide(file,rank) {
         const newFile = file-2
         const rookFile = file-4
         const newRookFile = rookFile+3
-        this.makeMove(file,rank,newFile,rank)
-        this.makeMove(rookFile,rank,newRookFile,rank)
+        this.movePiece(file,rank,newFile,rank)
+        this.movePiece(rookFile,rank,newRookFile,rank)
     }
     updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
         //castling
@@ -792,7 +800,7 @@ class Chessboard {
             boardString+="\n"
         }
         boardString+="  a b c d e f g h"
-        console.log(boardString)
+        console.log(`%c${boardString}`, "color:red; font-size:20px; font-family:monospace")
     }
 
 
@@ -985,7 +993,6 @@ class ChessGame {
         if(validMove) {
             this.getChessboard().makeMove(fileFrom,rankFrom,fileTo,rankTo)
             this.renderBoard()
-            // this.updateFenFromMove()
         }
     }
     toggleBoardHighlights() {
@@ -1071,7 +1078,12 @@ class ChessGame {
 // test.importFen()
 // test.printBoard()
 
-game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
+game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4Q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
 game.getChessboard().createEmptyChessboard()
 game.getChessboard().importFen()
 game.renderBoard()
+
+
+
+
+    //MAKE CASTLE MOVE
