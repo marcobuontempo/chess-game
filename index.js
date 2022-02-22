@@ -468,6 +468,10 @@ class Chessboard {
             } else if (pieceFrom.colour=="black") {
                 this.setBlackKingPosition(fileTo,rankTo)
             }
+        } else if(pieceFrom.type=="pawn") {
+            //en passant capture
+            const offset = pieceFrom.colour=="white" ? -1 : 1
+            this.setSquarePiece(fileTo,rankTo+offset,null)
         }
     }
 
