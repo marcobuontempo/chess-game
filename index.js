@@ -506,7 +506,7 @@ class Chessboard {
             } else if(!kingIsInCheck) {
                 return "Draw: Stalemate"
             }
-        } else if(halfMoveCount>=50) {
+        } else if(halfMoveCount>=100) {
             return "Draw: 50 Move Rule"
         }
         return "in-progress"
@@ -1149,7 +1149,14 @@ class ChessGame {
         this.removePieceEventListeners()
 
         const gameState = this.getChessboard().getGameState()
-        if(gameState=="in-progress") { this.addPieceEventListeners() }
+        if(gameState=="in-progress") { 
+            this.addPieceEventListeners() 
+        } else {
+            document.querySelector("#game-state").innerHTML = gameState
+        }
+
+        const fen = this.getChessboard().getFen()
+        document.querySelector("#fen").innerHTML = fen
     }
 
 
