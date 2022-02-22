@@ -888,6 +888,16 @@ class Chessboard {
         })
         return attackedSquares
     }
+
+
+
+
+
+
+    initialiseBoard() {
+        this.createEmptyChessboard()
+        this.importFen()
+    }
 }
 
 
@@ -896,8 +906,9 @@ class Chessboard {
 
 
 class ChessGame {
-    constructor(fen) {
+    constructor(fen, gameMode) {
         this._chessboard = new Chessboard(fen),  //the game board to operate within
+        this._gameMode = gameMode || "pvp", //player-vs-player (pvp) OR player-vs-bot (pvb)
         this._gameState = "in-progress",   //current game state : in-progress, checkmate: white wins, checkmate: black wins, draw: stalemate, draw: 3-fold repetition, draw: 50 move rule
         this._playerColour = "white", //the user's colour
         this._selectedSquare = Array(2).fill(null),    //the currently selected piece's square
@@ -911,6 +922,9 @@ class ChessGame {
     //Getters
     getChessboard() {
         return this._chessboard;
+    }
+    getGameMode() {
+        return this._gameMode;
     }
     getGameState() {
         return this._gameState;
@@ -926,6 +940,9 @@ class ChessGame {
     }
 
     //Setters
+    setGameMode(newGameMode) {
+        this._gameMode = newGameMode;
+    }
     setGameState(newGameState) {
         this._gameState = newGameState;
     }
@@ -969,7 +986,6 @@ class ChessGame {
             this.setSelectedPieceMoves(validPieceMoves) //update the stored valid piece moves
             this.toggleBoardHighlights()    //toggle highlights
         } else  {
-
             this.handleMovePiece(previousFile,previousRank,clickedFile,clickedRank)
 
             this.setSelectedSquare(null,null)
@@ -990,6 +1006,8 @@ class ChessGame {
 
         if(validMove) {
             this.getChessboard().makeMove(fileFrom,rankFrom,fileTo,rankTo)
+            if(this.getGameMode()=="pvp") { this.updateCurrentPlayer() }
+
             this.renderBoard()
         }
     }
@@ -1029,6 +1047,13 @@ class ChessGame {
 
 
 
+    updateCurrentPlayer() {
+        const currentTurn = this.getChessboard().getTurn()
+        this.setPlayerColour(currentTurn)
+    }
+
+
+
     //Render Board
     createBoardHtml() {
         let boardHtml = []
@@ -1062,21 +1087,31 @@ class ChessGame {
         const chessboardEl = document.querySelector("#chessboard")
         chessboardEl.innerHTML = boardHtml
 
-        game.removePieceEventListeners()
-        game.addPieceEventListeners()
+        this.removePieceEventListeners()
+        this.addPieceEventListeners()
     }
+
+
+
+
+    //CREATE GAME
+    //player vs player
+    startTwoPlayerGame() {
+        this.getChessboard().initialiseBoard()
+        this.renderBoard()
+    }
+    
+
+    //player vs bot
 }
 
 
 
 
-// ==== T E S T ====
-// test = new Chessboard("rnbqkbnr/ppp2ppp/8/8/Q7/8/PPPPPPPP/RNBQKBNR")
-// test.createEmptyChessboard()
-// test.importFen()
-// test.printBoard()
 
-game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4Q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
-game.getChessboard().createEmptyChessboard()
-game.getChessboard().importFen()
-game.renderBoard()
+
+//====== T E S T ======
+
+//PLAYER VS PLAYER
+    game = new ChessGame("rnbqkbnr/pppp1ppp/8/4pP2/8/4Q3/PPP2PPP/RNBQK2R w KQkq e6 0 1")
+    game.startTwoPlayerGame()
