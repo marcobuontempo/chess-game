@@ -97,4 +97,5 @@ html, body {
 /* END GAME */
 #game-state {
     text-transform: capitalize;
+    visibility: hidden;
 }

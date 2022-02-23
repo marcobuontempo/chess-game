@@ -271,16 +271,18 @@ class Chessboard {
             }
 
             //current turn
-            const fenTurn = importedFen[1]
+            let fenTurn = importedFen[1]==null ? "w" : importedFen[1]
             let newTurn
             switch(fenTurn) {
                 case "w": newTurn = "white"; break
                 case "b": newTurn = "black"; break
+                default: newTurn = "white"; break
             }
             this.setTurn(newTurn)
 
             //castle rights
-            const fenCastle = importedFen[2]
+            let fenCastle = importedFen[2]==null ? "KQkq" : importedFen[2]
+
             const newCastle = Array(4).fill(null)
             if(fenCastle.includes("K")) { newCastle[0]="K" }
             if(fenCastle.includes("Q")) { newCastle[1]="Q" }
@@ -289,18 +291,18 @@ class Chessboard {
             this.setCastleRights(newCastle)
 
             //en passant coordinate
-            const fenEnPassant = importedFen[3]
+            let fenEnPassant = importedFen[3]==null ? "-" : importedFen[3]
             if(fenEnPassant!="-") {
                 const newEnPassant = this.convertCoordinateToSquare(fenEnPassant)
                 this.setEnPassantSquare([newEnPassant[0],newEnPassant[1]])
             }
 
             //halfmove counter
-            const fenHalfMove = importedFen[4]
+            let fenHalfMove = importedFen[4]==null ? 0 : importedFen[4]
             this.setHalfMoveCount(Number(fenHalfMove))
         
             //fullmove counter
-            const fenFullMove = importedFen[5]
+            let fenFullMove = importedFen[5]==null ? 1 : importedFen[5]
             this.setFullMoveCount(Number(fenFullMove))
 
             //is current king in check
@@ -499,9 +501,6 @@ class Chessboard {
         //check game end
         const endGame = this.checkEndGame()
         this.setGameState(endGame)
-
-        //TEST
-        this.evaluateCurrentPosition()
     }
     //END GAME
     checkEndGame() {
@@ -758,13 +757,11 @@ class Chessboard {
         return false
     }
     moveRookCastleKingSide(file,rank) {
-        const newFile = file+2
         const rookFile = file+3
         const newRookFile = rookFile-2
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
     moveRookCastleQueenSide(file,rank) {
-        const newFile = file-2
         const rookFile = file-4
         const newRookFile = rookFile+3
         this.movePiece(rookFile,rank,newRookFile,rank)
@@ -971,7 +968,7 @@ class Chessboard {
     //=== EVALUATE POSITION ===
 
     evaluateCurrentPosition() {
-        let matieralDifference = 0
+        let materialDifference = 0
 
         this.getBoardSquares().forEach(file => {
             file.forEach(square => {
@@ -980,54 +977,59 @@ class Chessboard {
                     const offset = square.hasPiece.colour=="white" ? 1 : -1
     
                     switch(square.hasPiece.type) {
-                        case "rook": pieceWorth=5; break
-                        case "knight": pieceWorth=3; break
-                        case "bishop": pieceWorth=3; break
-                        case "pawn": pieceWorth=1; break
-                        case "queen": pieceWorth=9; break
-                        case "king": pieceWorth=9999; break
+                        case "rook": pieceWorth=50; break
+                        case "knight": pieceWorth=30; break
+                        case "bishop": pieceWorth=30; break
+                        case "pawn": pieceWorth=10; break
+                        case "queen": pieceWorth=90; break
+                        case "king": pieceWorth=999; break
                     }
         
-                    matieralDifference+=(pieceWorth*offset)
+                    materialDifference+=(pieceWorth*offset)
                 }
             })
         })
 
-        return matieralDifference
+        return materialDifference
     }
 
 
     //find best move
-    findBestMoveFromCurrentPosition() {
-        // while(depth>0) {            
-        //     depth--
-        // }
-        let bestMove
-        let bestMoveScore
+    findBestMoveFromCurrentPosition(depth) {
+        let currentBest = { move:null,score:null }
+
         let movesChecked = 0
 
         const currentColour = this.getTurn()
         const currentFen = this.getFen()
+
+        const colourOffset = currentColour=="white" ? 1 : -1
         
         const moves = this.generateAllValidMoves(currentColour)
         this.shuffleMoves(moves)
 
+        for(let i=0;i<moves.length;i++) {
+            const moveTest = moves[i]
 
-        moves.forEach(move => {
             const boardCopy = new Chessboard(currentFen)
             boardCopy.initialiseBoard()
-            boardCopy.makeMove(move[0],move[1],move[2],move[3])
-            const evaluationScore = boardCopy.evaluateCurrentPosition()
+            boardCopy.makeMove(moveTest[0],moveTest[1],moveTest[2],moveTest[3])
+            const evaluationScore = boardCopy.evaluateCurrentPosition()*colourOffset
 
-            if(movesChecked==0) { bestMove=move; bestMoveScore=evaluationScore }
+            if(movesChecked==0) { currentBest.move=moveTest; currentBest.score=evaluationScore } //set initial best move
 
-            if(evaluationScore>bestMoveScore) { bestMove=move; bestMoveScore=evaluationScore }
+            if(evaluationScore>currentBest.score) { currentBest.move=moveTest; currentBest.score=evaluationScore } //set best move if new evaluation is better
+
+            //recursive loop to find deeper move evaluation
+            // if(depth>0) {
+            //     const newBest = boardCopy.findBestMoveFromCurrentPosition(depth-1)
+            //     if(newBest.score>currentBest.score) { currentBest.move=moveTest; currentBest.score=evaluationScore }
+            // }
 
             movesChecked++
-        })
-
-        console.log(bestMove,movesChecked)
-        return bestMove
+        }
+        
+        return currentBest
     }
 
 
@@ -1151,8 +1153,8 @@ class ChessGame {
             if(this.getGameMode()=="pvp") { 
                 this.updateCurrentPlayer() 
             } else if(this.getGameMode()=="pvb" && this.getChessboard().getGameState()=="in-progress") { 
-                const bestMove = this.getChessboard().findBestMoveFromCurrentPosition()
-                this.getChessboard().makeMove(bestMove[0],bestMove[1],bestMove[2],bestMove[3])
+                const best = this.getChessboard().findBestMoveFromCurrentPosition(1).move
+                this.getChessboard().makeMove(best[0],best[1],best[2],best[3])
             }
 
             this.renderBoard()
@@ -1252,12 +1254,16 @@ class ChessGame {
         this.removePieceEventListeners()
 
         const gameState = this.getChessboard().getGameState()
+        const gameStateEl = document.querySelector("#game-state")
+        gameStateEl.innerHTML = gameState
+
         if(gameState=="in-progress") { 
             this.addPieceEventListeners() 
         } else {
-            document.querySelector("#game-state").innerHTML = gameState
+            gameStateEl.style.visibility = "visible"
         }
-
+        
+        
         const fen = this.getChessboard().getFen()
         document.querySelector("#fen").innerHTML = fen
     }
@@ -1276,6 +1282,12 @@ class ChessGame {
 
 //====== T E S T ======
 
-//PLAYER VS PLAYER
-    game = new ChessGame(undefined, "pvb")
+//PLAYER VS BOT
+    game = new ChessGame("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "pvb")
     game.startGame()
+
+
+/*
+    TO-DO
+    *occasional bug/error related to rook or king move
+*/
