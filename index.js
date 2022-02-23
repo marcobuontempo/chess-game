@@ -499,6 +499,9 @@ class Chessboard {
         //check game end
         const endGame = this.checkEndGame()
         this.setGameState(endGame)
+
+        //TEST
+        this.evaluateCurrentPosition()
     }
     //END GAME
     checkEndGame() {
@@ -890,8 +893,7 @@ class Chessboard {
         //create a board copy to test on
         const currentFen = this.getFen()
         const boardCopy = new Chessboard(currentFen)
-        boardCopy.createEmptyChessboard()
-        boardCopy.importFen()
+        boardCopy.initialiseBoard()
 
         //move piece and check validate that king is not in check
         const colourFrom = boardCopy.getSquare(fileFrom,rankFrom).hasPiece.colour
@@ -937,7 +939,7 @@ class Chessboard {
         const validMoves = []
 
         pseudoMoves.forEach(move => {
-            if(this.isValidMove(fileFrom,rankFrom,move[0],move[1])) { validMoves.push([move[0],move[1]]) }
+            if(this.isValidMove(fileFrom,rankFrom,move[0],move[1])) { validMoves.push([fileFrom,rankFrom,move[0],move[1]]) }
         })
         return validMoves
     }
@@ -955,14 +957,91 @@ class Chessboard {
     }
 
 
-
-
-
-
+    //methods to call to first create board
     initialiseBoard() {
         this.createEmptyChessboard()
         this.importFen()
     }
+
+
+
+
+
+
+    //=== EVALUATE POSITION ===
+
+    evaluateCurrentPosition() {
+        let matieralDifference = 0
+
+        this.getBoardSquares().forEach(file => {
+            file.forEach(square => {
+                if(square.hasPiece!=null) {
+                    let pieceWorth
+                    const offset = square.hasPiece.colour=="white" ? 1 : -1
+    
+                    switch(square.hasPiece.type) {
+                        case "rook": pieceWorth=5; break
+                        case "knight": pieceWorth=3; break
+                        case "bishop": pieceWorth=3; break
+                        case "pawn": pieceWorth=1; break
+                        case "queen": pieceWorth=9; break
+                        case "king": pieceWorth=9999; break
+                    }
+        
+                    matieralDifference+=(pieceWorth*offset)
+                }
+            })
+        })
+
+        return matieralDifference
+    }
+
+
+    //find best move
+    findBestMoveFromCurrentPosition() {
+        // while(depth>0) {            
+        //     depth--
+        // }
+        let bestMove
+        let bestMoveScore
+        let movesChecked = 0
+
+        const currentColour = this.getTurn()
+        const currentFen = this.getFen()
+        
+        const moves = this.generateAllValidMoves(currentColour)
+        this.shuffleMoves(moves)
+
+
+        moves.forEach(move => {
+            const boardCopy = new Chessboard(currentFen)
+            boardCopy.initialiseBoard()
+            boardCopy.makeMove(move[0],move[1],move[2],move[3])
+            const evaluationScore = boardCopy.evaluateCurrentPosition()
+
+            if(movesChecked==0) { bestMove=move; bestMoveScore=evaluationScore }
+
+            if(evaluationScore>bestMoveScore) { bestMove=move; bestMoveScore=evaluationScore }
+
+            movesChecked++
+        })
+
+        console.log(bestMove,movesChecked)
+        return bestMove
+    }
+
+
+    shuffleMoves(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    //find best move from current position
+        //generate all valid moves
+        //generate all valid moves from each previous move
+        //generate all valid moves from each previous move and 
 }
 
 
@@ -1063,13 +1142,18 @@ class ChessGame {
         const validMoves = this.getSelectedPieceMoves()
         if(validMoves!=null) {
             validMoves.forEach(move => {
-                if(fileTo==move[0] && rankTo==move[1]) { validMove = true }
+                if(fileTo==move[2] && rankTo==move[3]) { validMove = true }
             })
         }
 
         if(validMove) {
             this.getChessboard().makeMove(fileFrom,rankFrom,fileTo,rankTo)
-            if(this.getGameMode()=="pvp") { this.updateCurrentPlayer() }
+            if(this.getGameMode()=="pvp") { 
+                this.updateCurrentPlayer() 
+            } else if(this.getGameMode()=="pvb" && this.getChessboard().getGameState()=="in-progress") { 
+                const bestMove = this.getChessboard().findBestMoveFromCurrentPosition()
+                this.getChessboard().makeMove(bestMove[0],bestMove[1],bestMove[2],bestMove[3])
+            }
 
             this.renderBoard()
         }
@@ -1086,8 +1170,8 @@ class ChessGame {
         const newMoveSquares = this.getSelectedPieceMoves()
         if(newMoveSquares!=null) {
             newMoveSquares.forEach(validMove => {
-                const file = validMove[0]
-                const rank = validMove[1]
+                const file = validMove[2]
+                const rank = validMove[3]
                 const validSquareHtml = document.querySelector(`[data-board-file='${file}'][data-board-rank='${rank}']`)
                 validSquareHtml.classList.toggle("highlighted-square")
             })
@@ -1193,5 +1277,5 @@ class ChessGame {
 //====== T E S T ======
 
 //PLAYER VS PLAYER
-    game = new ChessGame()
+    game = new ChessGame(undefined, "pvb")
     game.startGame()
