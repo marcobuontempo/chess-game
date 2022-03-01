@@ -4,21 +4,54 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHESS</title>
+    <title>Chess Game</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet"> 
 
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="game-options">
+        <h1>CHESS</h1>
+        <p id="error-message"></p>
+        <form>
+            <fieldset id="game-mode-option">
+                <legend>Game Mode:</legend>
+                <input type="radio" id="pvp-mode" name="game-mode" value="pvp" checked>
+                <label for="pvp">Player vs Player</label><br>
+                <input type="radio" id="pvb-mode" name="game-mode" value="pvb">
+                <label for="pvb">Player vs Bot</label><br>
+            </fieldset>
+            <fieldset id="player-colour-option">
+                <legend>Player Colour:</legend>
+                <input type="radio" id="white-player" name="player-colour" value="white" checked>
+                <label for="white">White</label><br>
+                <input type="radio" id="black=player" name="player-colour" value="black">
+                <label for="black">Black</label><br>
+            </fieldset>
+            <button type="button" id="show-fen-import">Use Custom FEN</button>
+            <fieldset id="import-fen-option">
+                <legend>Custom Import FEN</legend>
+                <input id="custom-fen" type="text" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">
+            </fieldset>
+            <button type="button" id="start-game">Start Game</button>
+          </form>
+    </div>
+
     <div id="chessboard-container">
+        <h1>CHESS</h1>
         <p id="game-state"></p>
         <div id="chessboard">
             <!-- Chessboard inserted here -->
         </div>
-        <p id="fen"></p>
+        <p class="fen-title">CURRENT FEN: <span id="fen"></span></p>
+        <button id="copy-fen">Copy FEN</button>
     </div>
 
-    <!-- <script src="chessboard.js"></script> -->
-    <!-- <script src="chessengine.js"></script> -->
+    <script src="chessboard.js"></script>
+    <script src="chessgame.js"></script>
     <script src="index.js"></script>
 </body>
 </html>

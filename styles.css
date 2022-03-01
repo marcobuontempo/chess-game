@@ -5,12 +5,74 @@ html, body {
     height: 100%;
     width: 100%;
     background-color: slategrey;
+    font-family: Arial, Helvetica, sans-serif;
 }
+h1 {
+    font-family: "Rock Salt";
+}
+
+
+
+/* GAME OPTIONS */
+#game-options {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    height: 100%;
+    width: 100%;
+}
+#player-colour-option {
+    display: none;
+}
+#import-fen-option {
+    display: none;
+}
+#error-message {
+    color: darkred;
+}
+legend {
+    font-weight: bold;
+}
+form {
+    width: min(80%,600px);
+    text-align: center;
+}
+fieldset {
+    margin: 0.5em;
+}
+form button {
+    font-size: 1.5em;
+    border-radius: 0.2em;
+    border-width: 0.1em;
+    cursor: pointer;
+    background-color: darkgrey;
+}
+form button:hover {
+    background: none;
+}
+#custom-fen {
+    width: 100%;
+    font-size: 0.7em;
+    text-align: center;
+}
+
+
+
+/* FEN DISPLAY */
+.fen-title {
+    font-weight: bold;
+}
+#fen {
+    font-weight: normal;
+}
+
 
 
 /* BOARD DISPLAY */
 #chessboard-container {
-    display: flex;
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
