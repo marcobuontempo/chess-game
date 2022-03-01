@@ -459,10 +459,13 @@ class Chessboard {
         }
     }
     //make actual move of piece on board
-    makeMove(fileFrom,rankFrom,fileTo,rankTo) {
-        this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
+    makeMove(fileFrom,rankFrom,fileTo,rankTo) {      
+        const pieceFrom = this.getSquare(fileFrom,rankFrom).hasPiece
+        const pieceTo = this.getSquare(fileTo,rankTo).hasPiece
         
         this.movePiece(fileFrom,rankFrom,fileTo,rankTo)
+        
+        this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo,pieceFrom,pieceTo)
 
         //check whether king is in check and update state
         this.updateKingIsInCheck() 
@@ -734,11 +737,11 @@ class Chessboard {
         const newRookFile = rookFile+3
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
-    updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
+    updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo,pieceFrom,pieceTo) {
         //castling
         const newCastleRights = this.getCastleRights()
-        const pieceType = this.getSquare(fileFrom,rankFrom).hasPiece.type
-        const pieceColour = this.getSquare(fileFrom,rankFrom).hasPiece.colour
+        const pieceType = pieceFrom.type
+        const pieceColour = pieceFrom.colour
 
         if(pieceType=="king") {
             if(pieceColour=="white") { 
@@ -775,7 +778,6 @@ class Chessboard {
         }
         this.setEnPassantSquare(newEnPassantSquare)
         //half move count
-        const pieceTo = this.getSquare(fileTo,rankTo).hasPiece
         if(pieceTo!=null || pieceType=="pawn") {
             this.resetHalfMoveCount()
         } else {

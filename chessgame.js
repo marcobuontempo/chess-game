@@ -208,8 +208,7 @@ class ChessGame {
         } else {
             gameStateEl.style.visibility = "visible"
         }
-        
-        
+                
         const fen = this.getChessboard().getFen()
         document.querySelector("#fen").innerHTML = fen
     }
