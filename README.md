@@ -42,9 +42,11 @@ var chessgame = new Chessgame(FEN, Game Mode, Player Colour)
 * **Note:** creating an instance without any arguments will create a standard default starting position chessboard
 <br/>
 <br/>
+
 ```js
 chessgame.startGame()
 ```
+
 * Generates the board and displays the game
 
 <br/>
@@ -64,28 +66,36 @@ chessgame.startGame()
 * **Note:** for simplicity, ```this.getBoardSquares(file,rank)``` uses the exact file/rank, not the index. So, ```this.getBoardSquares(2,3)``` returns square B3
 <br/>
 <br/>
+
 ```js
 createEmptyChessboard()
 ```
+
 * Generates an empty board and stores in ```this._boardSquares```
 <br/>
 <br/>
+
 ```js
 importFen()
 ```
+
 * Uses the current instance's FEN value, and fills the board with the appropriate pieces
 * Also sets the board values appropriately (e.g. current turn to play, castle rights, etc.)
 <br/>
 <br/>
+
 ```js
 initialiseBoard()
 ```
+
 * Combines the common process of `createEmptyChessboard()` and `importFEN()`
 <br/>
 <br/>
+
 ```js
 movePiece(fileFrom,rankFrom,fileTo,rankTo,promoteTo)
 ```
+
 * Simple movement of piece from one square to another
 * fileFrom,rankFrom,fileTo,rankTo:
     * integer values representing actual file/rank movements
@@ -94,28 +104,36 @@ movePiece(fileFrom,rankFrom,fileTo,rankTo,promoteTo)
 * Example: ```this.movePiece(1,7,1,8,"queen")``` would promote a pawn to queen, onto square A8 (where A7 was a pawn)
 <br/>
 <br/>
+
 ```js
 makeMove(fileFrom,rankFrom,fileTo,rankTo,promoteTo)
 ```
+
 * A robust version of `movePiece()`, where all considerations of the board's state are updated (e.g. current FEN string, castle rights, etc.)
 <br/>
 <br/>
+
 ```js
 generatePiecePseudoMoves(fileFrom,rankFrom)
 ```
+
 * Generates all possible moves for a piece on the board
 <br/>
 <br/>
+
 ```js
 generatePieceValidMoves(fileFrom,rankFrom)
 ```
+
 * Uses the pseudo-moves generated for a piece, and checks whether each move is valid
 * Prevents invalid-moves
 <br/>
 <br/>
+
 ```js
 printBoard(fileFrom,rankFrom)
 ```
+
 * Log to console the current internal board state
     * Example output:
     ```
@@ -132,9 +150,11 @@ printBoard(fileFrom,rankFrom)
     * *board is presented with FEN notation*
 <br/>
 <br/>
+
 ```js
 printAttackedSquares(attackingColour)
 ```
+
 * Log to console all squares currently being attacked by a specified attacking colour ("white"/"black")
     * Example output: 
     ```
