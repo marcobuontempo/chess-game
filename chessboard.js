@@ -9,13 +9,12 @@ class Chessboard {
         this._fullMoveCount = 0,
         this._boardSquares = [],
         this._pieceIcons = { k:"♚", q:"♛", r:"♜", b:"♝", n:"♞", p:"♟", 
-                             K:"♔", Q:"♕", R:"♖", B:"♗", N:"♘", P:"♙", },
+                             K:"♚", Q:"♛", R:"♜", B:"♝", N:"♞", P:"♟" },
+                             //K:"♔", Q:"♕", R:"♖", B:"♗", N:"♘", P:"♙", }, accurate unicode white piece icons -- not using as it reduces the piece visibility
         this._whiteKingPosition = [],
         this._blackKingPosition = [],
         this._currentKingIsInCheck = false  //whether the current turn colour's king is in check
     }
-
-
 
 
     /*
@@ -64,8 +63,6 @@ class Chessboard {
     }
 
 
-
-
     /*
     =================
     =====SETTERS=====
@@ -107,9 +104,6 @@ class Chessboard {
     setCurrentKingIsInCheck(isInCheck) {
         this._currentKingIsInCheck = isInCheck;
     }
-
-
-
 
 
     /*
@@ -177,9 +171,6 @@ class Chessboard {
     }
 
 
-
-
-
     /*
     =================
     ==CREATE  BOARD==
@@ -232,10 +223,6 @@ class Chessboard {
         }
         this.setBoardSquares(boardSquares)
     }
-
-
-
-
 
 
     /*
@@ -313,14 +300,12 @@ class Chessboard {
             throw "Invalid FEN"
         }
     }
-
     updateKingIsInCheck() {
         const currentColour = this.getTurn()
         const currentKingPosition = currentColour=="white" ? this.getWhiteKingPosition() : this.getBlackKingPosition()
         const isInCheck = this.isKingInCheck(currentKingPosition[0],currentKingPosition[1],currentColour)
         this.setCurrentKingIsInCheck(isInCheck)
     }
-
 
 
     /*
@@ -351,9 +336,6 @@ class Chessboard {
     resetFullMoveCount() {
         this.setFullMoveCount(0)
     }
-
-
-
 
 
     /*
@@ -415,9 +397,6 @@ class Chessboard {
     }
 
 
-
-
-
     /*
     =================
     ===PRINT BOARD===
@@ -441,9 +420,6 @@ class Chessboard {
         console.log(`%c${boardString}`, "color:green; font-size:20px; font-family:monospace")
     }
 
-
-
-
     
     /*
     =================
@@ -463,7 +439,6 @@ class Chessboard {
             } else if(fileFrom==5 && fileTo==3) { 
                 this.moveRookCastleQueenSide(fileFrom,rankFrom)
             }
-
             //update king position
             if(pieceFrom.colour=="white") {
                 this.setWhiteKingPosition(fileTo,rankTo)
@@ -484,7 +459,6 @@ class Chessboard {
             }
         }
     }
-
     //make actual move of piece on board
     makeMove(fileFrom,rankFrom,fileTo,rankTo) {
         this.updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo)
@@ -502,7 +476,7 @@ class Chessboard {
         const endGame = this.checkEndGame()
         this.setGameState(endGame)
     }
-    //END GAME
+    //end game state check
     checkEndGame() {
         const currentTurn = this.getTurn()
         const opponentTurn = currentTurn=="white" ? "Black" : "White"
@@ -521,8 +495,6 @@ class Chessboard {
         }
         return "in-progress"
     }
-
-
     //check if file/rank is on the edge of the board when scanning a direction
     isOnBoardEdge(direction,file,rank) {
         let onEdge = false
@@ -587,7 +559,6 @@ class Chessboard {
         }
         return moves
     }
-
     generatePseudoRookMoves(file,rank) {
         const moves =  this.generateDirectionMoves("A-H",file,rank).concat(
                         this.generateDirectionMoves("H-A",file,rank),
@@ -702,8 +673,6 @@ class Chessboard {
     }
 
 
-
-
     /*
     ============================
     ====SPECIAL MOVE HELPERS====
@@ -766,9 +735,6 @@ class Chessboard {
         const newRookFile = rookFile+3
         this.movePiece(rookFile,rank,newRookFile,rank)
     }
-
-
-
     updateBoardStateFromMove(fileFrom,rankFrom,fileTo,rankTo) {
         //castling
         const newCastleRights = this.getCastleRights()
@@ -799,8 +765,6 @@ class Chessboard {
             }
         }
         this.setCastleRights(newCastleRights)
-
-
         //en passant
         let newEnPassantSquare = [null,null]
         if(pieceType=="pawn") {
@@ -811,8 +775,6 @@ class Chessboard {
             }
         }
         this.setEnPassantSquare(newEnPassantSquare)
-
-
         //half move count
         const pieceTo = this.getSquare(fileTo,rankTo).hasPiece
         if(pieceTo!=null || pieceType=="pawn") {
@@ -820,21 +782,13 @@ class Chessboard {
         } else {
             this.addHalfMoveCount()
         }
-
-
         //full move count
         if(this.getTurn()=="black") {
             this.addFullMoveCount()
         }
-
-
         //current turn
         this.toggleTurn()
     }
-
-
-
-
 
 
     /*
@@ -864,9 +818,6 @@ class Chessboard {
         boardString+="  a b c d e f g h"
         console.log(`%c${boardString}`, "color:red; font-size:20px; font-family:monospace")
     }
-
-
-
 
 
     /*
@@ -952,8 +903,6 @@ class Chessboard {
         })
         return attackedSquares
     }
-
-
     //methods to call to first create board
     initialiseBoard() {
         this.createEmptyChessboard()
@@ -961,12 +910,11 @@ class Chessboard {
     }
 
 
-
-
-
-
-    //=== EVALUATE POSITION ===
-
+    /*
+    =====================
+    ==EVALUATE POSITION==
+    =====================
+    */
     evaluateCurrentPosition() {
         let materialDifference = 0
 
@@ -989,11 +937,8 @@ class Chessboard {
                 }
             })
         })
-
         return materialDifference
     }
-
-
     //find best move
     findBestMoveFromCurrentPosition() {
         let currentBest = { move:null,score:null }
@@ -1019,8 +964,6 @@ class Chessboard {
         
         return currentBest
     }
-
-
     shuffleMoves(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));

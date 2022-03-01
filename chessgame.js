@@ -18,7 +18,6 @@ class ChessGame {
     getGameMode() {
         return this._gameMode;
     }
-
     getPlayerColour() {
         return this._playerColour;
     }
@@ -43,7 +42,7 @@ class ChessGame {
         this._selectedPieceMoves = newMoves;
     }
 
-
+    //square/pieces event listeners
     addPieceEventListeners() {
         const boardSquares = document.querySelectorAll(".board-square")
         boardSquares.forEach((boardSquare) => {
@@ -56,7 +55,7 @@ class ChessGame {
             boardSquare.removeEventListener("click", this.eventHandlers.clickTile)
         })
     }
-
+    //logic to handle clicking a square
     clickSquare(e) {
         const currentTurn = this.getChessboard().getTurn()
         const playerColour = this.getPlayerColour()
@@ -85,6 +84,7 @@ class ChessGame {
         }
 
     }
+    //logic to handle clicking a piece to move
     handleMovePiece(fileFrom,rankFrom,fileTo,rankTo) {
         let validMove = false
 
@@ -107,6 +107,7 @@ class ChessGame {
             this.renderBoard()
         }
     }
+    //highlight board squares (i.e. valid moves, checked king, selected piece)
     toggleBoardHighlights() {
         //remove any existing move highlights
         const previousMoveSquares = document.querySelectorAll(".highlighted-square")
@@ -150,9 +151,7 @@ class ChessGame {
             kingHtml.classList.toggle("checked-king")
         }
     }
-
-
-    //toggle current player for player-player game mode
+    //toggle current player for player-vs-player game mode
     updateCurrentPlayer() {
         const gameMode = this.getGameMode()
 
@@ -214,9 +213,6 @@ class ChessGame {
         const fen = this.getChessboard().getFen()
         document.querySelector("#fen").innerHTML = fen
     }
-
-
-
 
     //CREATE GAME
     startGame() {
