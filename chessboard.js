@@ -9,8 +9,7 @@ class Chessboard {
         this._fullMoveCount = 0,
         this._boardSquares = [],
         this._pieceIcons = { k:"♚", q:"♛", r:"♜", b:"♝", n:"♞", p:"♟", 
-                             K:"♚", Q:"♛", R:"♜", B:"♝", N:"♞", P:"♟" },
-                             //K:"♔", Q:"♕", R:"♖", B:"♗", N:"♘", P:"♙", }, accurate unicode white piece icons -- not using as it reduces the piece visibility
+                             K:"♔", Q:"♕", R:"♖", B:"♗", N:"♘", P:"♙", },
         this._whiteKingPosition = [],
         this._blackKingPosition = [],
         this._currentKingIsInCheck = false  //whether the current turn colour's king is in check
