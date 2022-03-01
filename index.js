@@ -1,3 +1,5 @@
+var game //placeholder to store the game in
+
 // COPY FEN TO CLIPBOARD
 document.querySelector("#copy-fen").addEventListener("click",() => {
     const fenString = document.querySelector("#fen").innerHTML
@@ -37,7 +39,7 @@ document.querySelector("#start-game").addEventListener("click", () => {
     const playerColour = gameMode=="pvp" ? "white" : document.querySelector("[name=player-colour]:checked").value
 
     try {
-        const game = new ChessGame(customFen, gameMode, playerColour)
+        game = new ChessGame(customFen, gameMode, playerColour)
         game.startGame()
         document.querySelector("#chessboard-container").style.display="flex"
         document.querySelector("#game-options").style.display="none"
